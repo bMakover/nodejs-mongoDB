@@ -17,7 +17,6 @@ app.use(express.static(path.join(__dirname,"public")))
 
 routesInit(app);
 
-
 const server = http.createServer(app);
 
 let port = process.env.PORT || 3002
