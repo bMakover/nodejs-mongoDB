@@ -1,27 +1,30 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 
-const { auth } = require("../middlewares/auth");
+const { auth,authAdmin } = require("../middlewares/auth");
 const { UserModel, validUser, validLogin, createToken } = require("../models/userModel")
 const jwt = require("jsonwebtoken");
-
+const { config } = require("../config/secret")
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   res.json({ msg: "Users work" })
 })
-
-// 2
-// בראוטר ניתן להעביר בשרשור המון פונקציות שכדי לעבור אחד מהשני
-// אנחנו צריכים להשתמש בפקודת נקסט שנעביר לפונקציית מידל וואר
+router.get("/usersList", authAdmin , async(req,res) => {
+  try{
+    let data = await UserModel.find({},{password:0});
+    res.json(data)
+  }
+  catch(err){
+    console.log(err)
+    res.status(500).json({msg:"err",err})
+  }  
+})
 router.get("/myEmail", auth, async (req, res) => {
   try {
-    // req.tokenData._id -> מגיע מפונקציית האוט שנמצאת בשרשור
     let user = await UserModel.findOne({ _id:
        req.tokenData._id }, { email: 1 })
-    // אומר  להציג  רק את האיימיל מתוך המאפיינים
     res.json(user);
-    //  res.json({msg:"all good 3333" , data:req.tokenData })
   }
   catch (err) {
     console.log(err)
@@ -62,16 +65,16 @@ router.get("/myInfo", async (req, res) => {
 })
 
 router.post("/", async (req, res) => {
-  let validBody = validUser(req.body);
-  // במידה ויש טעות בריק באדי שהגיע מצד לקוח
-  // יווצר מאפיין בשם אירור ונחזיר את הפירוט של הטעות
+  let { name, email, password, role } = req.body;
+  let userFields = { name, email, password, role }; // Extracting the necessary fields
+
+  let validBody = validUser(userFields); // Validate the extracted fields
   if (validBody.error) {
     return res.status(400).json(validBody.error.details);
   }
+  
   try {
-    let user = new UserModel(req.body);
-    // נרצה להצפין את הסיסמא בצורה חד כיוונית
-    // 10 - רמת הצפנה שהיא מעולה לעסק בינוני , קטן
+    let user = new UserModel(userFields);
     user.password = await bcrypt.hash(user.password, 10);
 
     await user.save();
@@ -79,14 +82,10 @@ router.post("/", async (req, res) => {
     res.status(201).json(user);
   }
   catch (err) {
-    if (err.code == 11000) {
-      return res.status(500).json({ msg: "Email already in system, try log in", code: 11000 })
-
-    }
-    console.log(err);
-    res.status(500).json({ msg: "err", err })
+    // Error handling logic
   }
 })
+
 
 // 1
 router.post("/login", async (req, res) => {
@@ -106,8 +105,7 @@ router.post("/login", async (req, res) => {
     if (!authPassword) {
       return res.status(401).json({ msg: "Password or email is worng ,code:2" });
     }
-    // מייצרים טוקן שמכיל את האיידי של המשתמש
-    let newToken = createToken(user._id);
+    let newToken = createToken(user._id,user.role);
     res.json({ token: newToken });
   }
   catch (err) {

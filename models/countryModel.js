@@ -6,12 +6,10 @@ const countrySchema = new mongoose.Schema({
   capital:String,
   pop:Number,
   img:String,
-  // בנוסף כל רשומה בברירת מחדל שמייצר אותה
-  // ייתן לה את התאריך של עכשיו
+ 
   date:{
     type:Date, default:Date.now()
   },
-  // הוספת יוצר הרשומה 
   user_id:String
 })
 
