@@ -30,7 +30,7 @@ export default class CountryClass{
   }
 
   async delCountry(){
-    let url = "http://localhost:3001/countries/"+this.id;
+    let url = "https://first-try-2jm0.onrender.com/countries/"+this.id;
     try{
 
       let resp =  await axios({
